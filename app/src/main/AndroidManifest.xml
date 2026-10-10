@@ -3,6 +3,7 @@
     <application
         android:allowBackup="true"
         android:label="Cake or Real"
+        android:icon="@drawable/ic_cake_or_real"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false">
         <activity
