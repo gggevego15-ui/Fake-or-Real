@@ -277,27 +277,27 @@ class MainActivity : Activity() {
             answerRow.addView(cakeButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(6) })
         }
         nextButton.visibility = View.GONE
-        val embedUrl = when {
-            item.source.startsWith("Dailymotion") -> "https://www.dailymotion.com/embed/video/${item.videoId}"
-            item.source.startsWith("Pexels") -> item.videoId
-            else -> "https://www.youtube.com/embed/${item.videoId}?playsinline=1&rel=0&enablejsapi=1"
-        }
-        val watchUrl = if (item.source.startsWith("Dailymotion")) {
-            "https://www.dailymotion.com/video/${item.videoId}"
-        } else if (item.source.startsWith("Pexels")) {
-            item.videoId
+        if (item.source.startsWith("Pexels")) {
+            // Pexels serves its clips on a full page and may block iframe embedding.
+            // Load that page directly in WebView so its native video player can initialize.
+            video.loadUrl(item.videoId)
         } else {
-            "https://www.youtube.com/watch?v=${item.videoId}"
+            val embedUrl = if (item.source.startsWith("Dailymotion")) {
+                "https://www.dailymotion.com/embed/video/${item.videoId}"
+            } else {
+                "https://www.youtube.com/embed/${item.videoId}?playsinline=1&rel=0&enablejsapi=1"
+            }
+            val watchUrl = if (item.source.startsWith("Dailymotion")) {
+                "https://www.dailymotion.com/video/${item.videoId}"
+            } else {
+                "https://www.youtube.com/watch?v=${item.videoId}"
+            }
+            video.loadDataWithBaseURL(
+                if (item.source.startsWith("Dailymotion")) "https://www.dailymotion.com" else "https://www.youtube.com",
+                "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.fallback{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:13px;color:#fff;background:#181020cc;padding:8px}.fallback a{color:#ffdb91}</style></head><body><iframe src=\"${embedUrl}\" title=\"Cake or Real video\" allow=\"autoplay; fullscreen; picture-in-picture; encrypted-media\" allowfullscreen></iframe><div class=\"fallback\">Video not loading? <a href=\"${watchUrl}\" target=\"_blank\">Open video</a></div></body></html>",
+                "text/html", "UTF-8", null
+            )
         }
-        video.loadDataWithBaseURL(
-            when {
-                item.source.startsWith("Dailymotion") -> "https://www.dailymotion.com"
-                item.source.startsWith("Pexels") -> "https://www.pexels.com"
-                else -> "https://www.youtube.com"
-            },
-            "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.fallback{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:13px;color:#fff;background:#181020cc;padding:8px}.fallback a{color:#ffdb91}</style></head><body><iframe src=\"${embedUrl}\" title=\"Cake or Real video\" allow=\"autoplay; fullscreen; picture-in-picture; encrypted-media\" allowfullscreen></iframe><div class=\"fallback\">Video not loading? <a href=\"${watchUrl}\" target=\"_blank\">Open video</a></div></body></html>",
-            "text/html", "UTF-8", null
-        )
     }
 
     private fun answer(guessCake: Boolean) {
