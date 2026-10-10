@@ -71,40 +71,73 @@ class MainActivity : Activity() {
                 intArrayOf(Color.rgb(34, 17, 58), Color.rgb(91, 39, 100), Color.rgb(25, 20, 52)))
         }
         home.addView(TextView(this).apply {
+            text = "THE SWEETEST GUESSING GAME"
+            textSize = 11f
+            letterSpacing = 0.18f
+            setTextColor(Color.rgb(255, 219, 145))
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(18))
+        }, LinearLayout.LayoutParams(-1, -2))
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(18), dp(22), dp(18), dp(22))
+            background = rounded(Color.rgb(78, 43, 98), 28, Color.rgb(166, 108, 182), 1)
+        }
+        hero.addView(TextView(this).apply {
             text = "🍰"
-            textSize = 76f
+            textSize = 70f
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(-1, -2))
-        home.addView(TextView(this).apply {
+        hero.addView(TextView(this).apply {
             text = "CAKE OR REAL?"
-            textSize = 32f
+            textSize = 30f
             setTextColor(Color.WHITE)
             typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(-1, -2))
-        home.addView(TextView(this).apply {
-            text = "Can you spot the delicious illusion?"
-            textSize = 16f
+        hero.addView(TextView(this).apply {
+            text = "Looks real. Might be cake."
+            textSize = 15f
             setTextColor(Color.rgb(255, 219, 145))
             gravity = Gravity.CENTER
-            setPadding(0, dp(10), 0, dp(26))
+            setPadding(0, dp(8), 0, 0)
         }, LinearLayout.LayoutParams(-1, -2))
+        home.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+        home.addView(TextView(this).apply {
+            text = "CAN YOU SPOT THE ILLUSION?"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(12))
+        }, LinearLayout.LayoutParams(-1, -2))
+        val featureRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        featureRow.addView(homeFeature("🎬", "VIDEO\nROUNDS"), LinearLayout.LayoutParams(0, dp(76), 1f).apply { marginEnd = dp(5) })
+        featureRow.addView(homeFeature("🧠", "TRICKY\nILLUSIONS"), LinearLayout.LayoutParams(0, dp(76), 1f).apply { marginStart = dp(5); marginEnd = dp(5) })
+        featureRow.addView(homeFeature("🏆", "BEAT YOUR\nSCORE"), LinearLayout.LayoutParams(0, dp(76), 1f).apply { marginStart = dp(5) })
+        home.addView(featureRow, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
         home.addView(makeButton("▶  PLAY", Color.rgb(255, 202, 87)).apply {
             setTextColor(Color.rgb(36, 20, 55))
             textSize = 19f
             setOnClickListener { startGame() }
         }, LinearLayout.LayoutParams(-1, dp(60)).apply { bottomMargin = dp(12) })
-        home.addView(makeButton("HOW TO PLAY", Color.rgb(91, 205, 160)).apply {
+        home.addView(makeButton("HOW TO PLAY  ⓘ", Color.rgb(91, 205, 160)).apply {
             setOnClickListener {
-                Toast.makeText(this@MainActivity, "Watch the clip, then tap CAKE or REAL. Correct answers earn a point!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, "1. Watch the video.  2. Guess CAKE or REAL.  3. Earn points for every correct answer!", Toast.LENGTH_LONG).show()
             }
         }, LinearLayout.LayoutParams(-1, dp(54)))
         home.addView(TextView(this).apply {
-            text = "10+ rounds  •  Random order  •  Sound effects"
-            textSize = 13f
+            text = "14 ROUNDS  •  RANDOM ORDER  •  FREE TO PLAY"
+            textSize = 10f
+            letterSpacing = 0.06f
             setTextColor(Color.LTGRAY)
             gravity = Gravity.CENTER
-            setPadding(0, dp(26), 0, 0)
+            setPadding(0, dp(20), 0, 0)
         }, LinearLayout.LayoutParams(-1, -2))
         setContentView(home)
     }
@@ -342,6 +375,26 @@ class MainActivity : Activity() {
         toneGenerator = null
         if (::video.isInitialized) video.destroy()
         super.onDestroy()
+    }
+
+    private fun homeFeature(emoji: String, label: String): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER
+        setPadding(dp(4), dp(8), dp(4), dp(8))
+        background = rounded(Color.rgb(55, 34, 73), 16, Color.rgb(102, 74, 123), 1)
+        addView(TextView(this@MainActivity).apply {
+            text = emoji
+            textSize = 22f
+            gravity = Gravity.CENTER
+        }, LinearLayout.LayoutParams(-1, -2))
+        addView(TextView(this@MainActivity).apply {
+            text = label
+            textSize = 9f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(0, dp(3), 0, 0)
+        }, LinearLayout.LayoutParams(-1, -2))
     }
 
     private fun makeButton(label: String, color: Int): Button = Button(this).apply {
