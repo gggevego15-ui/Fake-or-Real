@@ -16,9 +16,14 @@ import android.widget.Toast
 
 class MainActivity : Activity() {
     private data class Round(val title: String, val videoId: String, val isCake: Boolean, val source: String)
+    // Answer key is explicit per round. Pexels pages below describe ordinary real-world footage.
     private val rounds = listOf(
         Round("Hyper-realistic chocolate sculpture", "rj60H_Y3bQ8", true, "Amaury Guichon / YouTube Shorts"),
-        Round("A real smartphone in use", "https://www.pexels.com/video/a-man-using-a-mobile-phone-7539292/", false, "Pexels stock footage")
+        Round("A real smartphone in use", "https://www.pexels.com/video/a-man-using-a-mobile-phone-7539292/", false, "Pexels stock footage"),
+        Round("A real banana close-up", "https://www.pexels.com/video/person-holding-a-banana-7199074/", false, "Pexels stock footage"),
+        Round("A real person using a phone with coffee", "https://www.pexels.com/video/a-man-using-his-smartphone-while-holding-a-cup-of-coffee-5630783/", false, "Pexels stock footage"),
+        Round("A real cup of coffee while walking", "https://www.pexels.com/video/man-holding-a-cup-of-coffee-while-walking-5321129/", false, "Pexels stock footage"),
+        Round("A real laptop and coffee", "https://www.pexels.com/video/a-man-is-holding-a-cup-of-coffee-while-using-a-laptop-20246512/", false, "Pexels stock footage")
     )
     private var roundIndex = 0
     private var score = 0
