@@ -7,6 +7,9 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.content.Intent
+import android.webkit.CookieManager
+import android.webkit.WebResourceRequest
 import android.view.Gravity
 import android.view.View
 import android.webkit.WebChromeClient
@@ -52,8 +55,71 @@ class MainActivity : Activity() {
         window.statusBarColor = Color.rgb(36, 20, 55)
         window.navigationBarColor = Color.rgb(36, 20, 55)
         toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 70)
+        buildHome()
+    }
+
+    private fun buildHome() {
+        val home = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(26), dp(28), dp(26), dp(28))
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(34, 17, 58), Color.rgb(91, 39, 100), Color.rgb(25, 20, 52)))
+        }
+        home.addView(TextView(this).apply {
+            text = "🍰"
+            textSize = 76f
+            gravity = Gravity.CENTER
+        }, LinearLayout.LayoutParams(-1, -2))
+        home.addView(TextView(this).apply {
+            text = "CAKE OR REAL?"
+            textSize = 32f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+            gravity = Gravity.CENTER
+        }, LinearLayout.LayoutParams(-1, -2))
+        home.addView(TextView(this).apply {
+            text = "Can you spot the delicious illusion?"
+            textSize = 16f
+            setTextColor(Color.rgb(255, 219, 145))
+            gravity = Gravity.CENTER
+            setPadding(0, dp(10), 0, dp(26))
+        }, LinearLayout.LayoutParams(-1, -2))
+        home.addView(makeButton("▶  PLAY", Color.rgb(255, 202, 87)).apply {
+            setTextColor(Color.rgb(36, 20, 55))
+            textSize = 19f
+            setOnClickListener { startGame() }
+        }, LinearLayout.LayoutParams(-1, dp(60)).apply { bottomMargin = dp(12) })
+        home.addView(makeButton("HOW TO PLAY", Color.rgb(91, 205, 160)).apply {
+            setOnClickListener {
+                Toast.makeText(this@MainActivity, "Watch the clip, then tap CAKE or REAL. Correct answers earn a point!", Toast.LENGTH_LONG).show()
+            }
+        }, LinearLayout.LayoutParams(-1, dp(54)))
+        home.addView(TextView(this).apply {
+            text = "10+ rounds  •  Random order  •  Sound effects"
+            textSize = 13f
+            setTextColor(Color.LTGRAY)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(26), 0, 0)
+        }, LinearLayout.LayoutParams(-1, -2))
+        setContentView(home)
+    }
+
+    private fun startGame() {
+        score = 0
+        roundOrder = rounds.shuffled()
+        roundIndex = 0
+        answered = false
         buildUi()
         loadRound()
+    }
+
+    private fun returnHome() {
+        if (::video.isInitialized) {
+            video.stopLoading()
+            video.loadUrl("about:blank")
+        }
+        buildHome()
     }
 
     private fun buildUi() {
@@ -91,7 +157,16 @@ class MainActivity : Activity() {
             setPadding(0, dp(7), 0, 0)
         }
         brand.addView(subtitle, matchWrap())
-        root.addView(brand, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+        root.addView(brand, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        root.addView(TextView(this).apply {
+            text = "‹  MAIN MENU"
+            textSize = 12f
+            setTextColor(Color.rgb(255, 219, 145))
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(dp(10), dp(3), dp(10), dp(3))
+            setOnClickListener { returnHome() }
+        }, LinearLayout.LayoutParams(-1, dp(26)))
         scoreLabel = TextView(this).apply {
             textSize = 15f
             setTextColor(Color.rgb(255, 232, 178))
@@ -113,9 +188,21 @@ class MainActivity : Activity() {
             setBackgroundColor(Color.BLACK)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-            settings.mediaPlaybackRequiresUserGesture = true
+            settings.mediaPlaybackRequiresUserGesture = false
+            settings.loadsImagesAutomatically = true
+            settings.javaScriptCanOpenWindowsAutomatically = true
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             webChromeClient = WebChromeClient()
-            webViewClient = WebViewClient()
+            webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                    val url = request.url.toString()
+                    if (url.startsWith("intent:")) {
+                        try { startActivity(Intent.parseUri(url, Intent.URI_INTENT_SCHEME)) } catch (_: Exception) { }
+                        return true
+                    }
+                    return false
+                }
+            }
         }
         video.background = rounded(Color.BLACK, 22, Color.rgb(166, 108, 182), 2)
         video.clipToOutline = true
@@ -186,20 +273,23 @@ class MainActivity : Activity() {
             answerRow.addView(cakeButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(6) })
         }
         nextButton.visibility = View.GONE
-        if (item.source.startsWith("Pexels")) {
-            video.loadUrl(item.videoId)
+        val embedUrl = if (item.source.startsWith("Dailymotion")) {
+            "https://www.dailymotion.com/embed/video/${item.videoId}"
         } else {
-            val embedUrl = if (item.source.startsWith("Dailymotion")) {
-                "https://www.dailymotion.com/embed/video/${item.videoId}"
-            } else {
-                "https://www.youtube-nocookie.com/embed/${item.videoId}?playsinline=1&rel=0"
-            }
-            video.loadDataWithBaseURL(
-                if (item.source.startsWith("Dailymotion")) "https://www.dailymotion.com" else "https://www.youtube-nocookie.com",
-                """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#000"><iframe width="100%" height="100%" style="position:absolute;inset:0;border:0" src="${embedUrl}" title="Cake or Real video" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe></body></html>""",
-                "text/html", "UTF-8", null
-            )
+            "https://www.youtube.com/embed/${item.videoId}?playsinline=1&rel=0&enablejsapi=1"
         }
+        val watchUrl = if (item.source.startsWith("Dailymotion")) {
+            "https://www.dailymotion.com/video/${item.videoId}"
+        } else if (item.source.startsWith("Pexels")) {
+            item.videoId
+        } else {
+            "https://www.youtube.com/watch?v=${item.videoId}"
+        }
+        video.loadDataWithBaseURL(
+            if (item.source.startsWith("Dailymotion")) "https://www.dailymotion.com" else "https://www.youtube.com",
+            "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.fallback{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:13px;color:#fff;background:#181020cc;padding:8px}.fallback a{color:#ffdb91}</style></head><body><iframe src=\"${embedUrl}\" title=\"Cake or Real video\" allow=\"autoplay; fullscreen; picture-in-picture; encrypted-media\" allowfullscreen></iframe><div class=\"fallback\">Video not loading? <a href=\"${watchUrl}\" target=\"_blank\">Open video</a></div></body></html>",
+            "text/html", "UTF-8", null
+        )
     }
 
     private fun answer(guessCake: Boolean) {
@@ -234,10 +324,15 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (::video.isInitialized) returnHome() else super.onBackPressed()
+    }
+
     override fun onDestroy() {
         toneGenerator?.release()
         toneGenerator = null
-        video.destroy()
+        if (::video.isInitialized) video.destroy()
         super.onDestroy()
     }
 
