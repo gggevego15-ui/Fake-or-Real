@@ -18,7 +18,11 @@ class MainActivity : Activity() {
     private data class Round(val title: String, val videoId: String, val isCake: Boolean, val source: String)
     // Answer key is explicit per round. Pexels pages below describe ordinary real-world footage.
     private val rounds = listOf(
-        Round("Hyper-realistic chocolate sculpture", "rj60H_Y3bQ8", true, "Amaury Guichon / YouTube Shorts"),
+        Round("Chocolate pencil illusion", "rj60H_Y3bQ8", true, "Amaury Guichon / YouTube Shorts"),
+        Round("Chocolate sneaker illusion", "Pz9PA3V9Jzw", true, "Amaury Guichon / verified YouTube"),
+        Round("Chocolate palm tree sculpture", "jzIrq-I8lMI", true, "Amaury Guichon / verified YouTube"),
+        Round("Pencil, book and sandals — cake illusion", "x9w0sgw", true, "Dailymotion cake-illusion compilation"),
+        Round("Hyper-realistic cake cutting reveal", "x84wpdd", true, "Dailymotion cake-illusion video"),
         Round("A real smartphone in use", "https://www.pexels.com/video/a-man-using-a-mobile-phone-7539292/", false, "Pexels stock footage"),
         Round("A real banana close-up", "https://www.pexels.com/video/person-holding-a-banana-7199074/", false, "Pexels stock footage"),
         Round("A real person using a phone with coffee", "https://www.pexels.com/video/a-man-using-his-smartphone-while-holding-a-cup-of-coffee-5630783/", false, "Pexels stock footage"),
@@ -132,9 +136,14 @@ class MainActivity : Activity() {
         if (item.source.startsWith("Pexels")) {
             video.loadUrl(item.videoId)
         } else {
+            val embedUrl = if (item.source.startsWith("Dailymotion")) {
+                "https://www.dailymotion.com/embed/video/${item.videoId}"
+            } else {
+                "https://www.youtube-nocookie.com/embed/${item.videoId}?playsinline=1&rel=0"
+            }
             video.loadDataWithBaseURL(
-                "https://www.youtube-nocookie.com",
-                """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#000"><iframe width="100%" height="100%" style="position:absolute;inset:0;border:0" src="https://www.youtube-nocookie.com/embed/${item.videoId}?playsinline=1&rel=0" title="Cake or Real video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></body></html>""",
+                if (item.source.startsWith("Dailymotion")) "https://www.dailymotion.com" else "https://www.youtube-nocookie.com",
+                """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#000"><iframe width="100%" height="100%" style="position:absolute;inset:0;border:0" src="${embedUrl}" title="Cake or Real video" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe></body></html>""",
                 "text/html", "UTF-8", null
             )
         }
