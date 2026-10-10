@@ -4,6 +4,8 @@ import android.app.Activity
 import android.os.Bundle
 import android.graphics.Color
 import android.graphics.Typeface
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.view.Gravity
 import android.view.View
 import android.webkit.WebChromeClient
@@ -33,6 +35,7 @@ class MainActivity : Activity() {
     private var roundIndex = 0
     private var score = 0
     private var answered = false
+    private var toneGenerator: ToneGenerator? = null
     private lateinit var root: LinearLayout
     private lateinit var scoreLabel: TextView
     private lateinit var questionLabel: TextView
@@ -47,6 +50,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.rgb(36, 20, 55)
         window.navigationBarColor = Color.rgb(36, 20, 55)
+        toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 70)
         buildUi()
         loadRound()
     }
@@ -107,6 +111,9 @@ class MainActivity : Activity() {
         nextButton.setTextColor(Color.rgb(36, 20, 55))
         nextButton.visibility = View.GONE
         nextButton.setOnClickListener {
+            it.animate().scaleX(0.96f).scaleY(0.96f).setDuration(70).withEndAction {
+                it.animate().scaleX(1f).scaleY(1f).setDuration(90).start()
+            }.start()
             roundIndex++
             if (roundIndex >= roundOrder.size) {
                 roundOrder = rounds.shuffled()
@@ -132,12 +139,14 @@ class MainActivity : Activity() {
         scoreLabel.text = "Score: $score  •  Round ${roundIndex + 1}/${rounds.size}"
         questionLabel.text = "Is it cake or a real object?"
         answerLabel.text = "Watch the clip, then choose."
+        answerLabel.alpha = 0f
+        answerLabel.animate().alpha(1f).setDuration(300).start()
         cakeButton.isEnabled = true
         realButton.isEnabled = true
         // Randomize the physical order of the two answer choices on every round.
         answerRow.removeAllViews()
-        cakeButton.setOnClickListener { answer(true) }
-        realButton.setOnClickListener { answer(false) }
+        cakeButton.setOnClickListener { animateTap(it); answer(true) }
+        realButton.setOnClickListener { animateTap(it); answer(false) }
         val cakeFirst = listOf(true, false).shuffled().first()
         if (cakeFirst) {
             answerRow.addView(cakeButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginEnd = dp(6) })
@@ -172,10 +181,34 @@ class MainActivity : Activity() {
         scoreLabel.text = "Score: $score  •  Round ${roundIndex + 1}/${rounds.size}"
         val reveal = if (item.isCake) "cake" else "a real object"
         answerLabel.text = if (correct) "🎉 Correct! This clip shows $reveal." else "🙈 Not quite — this clip shows $reveal."
+        toneGenerator?.startTone(if (correct) ToneGenerator.TONE_PROP_ACK else ToneGenerator.TONE_PROP_NACK, 180)
+        answerLabel.alpha = 0f
+        answerLabel.scaleX = 0.85f
+        answerLabel.scaleY = 0.85f
+        answerLabel.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(260).start()
+        scoreLabel.animate().cancel()
+        scoreLabel.scaleX = 0.9f
+        scoreLabel.scaleY = 0.9f
+        scoreLabel.animate().scaleX(1f).scaleY(1f).setDuration(220).start()
         cakeButton.isEnabled = false
         realButton.isEnabled = false
+        nextButton.alpha = 0f
         nextButton.visibility = View.VISIBLE
+        nextButton.animate().alpha(1f).setDuration(250).start()
         Toast.makeText(this, if (correct) "Correct!" else "Try the next one!", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun animateTap(view: View) {
+        view.animate().scaleX(0.94f).scaleY(0.94f).setDuration(70).withEndAction {
+            view.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+        }.start()
+    }
+
+    override fun onDestroy() {
+        toneGenerator?.release()
+        toneGenerator = null
+        video.destroy()
+        super.onDestroy()
     }
 
     private fun makeButton(label: String, color: Int): Button = Button(this).apply {
