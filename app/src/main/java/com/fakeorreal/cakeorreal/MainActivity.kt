@@ -33,7 +33,11 @@ class MainActivity : Activity() {
         Round("A real banana close-up", "https://www.pexels.com/video/person-holding-a-banana-7199074/", false, "Pexels stock footage"),
         Round("A real person using a phone with coffee", "https://www.pexels.com/video/a-man-using-his-smartphone-while-holding-a-cup-of-coffee-5630783/", false, "Pexels stock footage"),
         Round("A real cup of coffee while walking", "https://www.pexels.com/video/man-holding-a-cup-of-coffee-while-walking-5321129/", false, "Pexels stock footage"),
-        Round("A real laptop and coffee", "https://www.pexels.com/video/a-man-is-holding-a-cup-of-coffee-while-using-a-laptop-20246512/", false, "Pexels stock footage")
+        Round("A real laptop and coffee", "https://www.pexels.com/video/a-man-is-holding-a-cup-of-coffee-while-using-a-laptop-20246512/", false, "Pexels stock footage"),
+        Round("A real person walking outdoors", "https://www.pexels.com/search/videos/walking/", false, "Pexels stock footage"),
+        Round("Real fruit and food close-ups", "https://www.pexels.com/search/videos/fruit/", false, "Pexels stock footage"),
+        Round("Real sneakers in motion", "https://www.pexels.com/search/videos/sneakers/", false, "Pexels stock footage"),
+        Round("Real desserts on a table", "https://www.pexels.com/search/videos/dessert/", false, "Pexels stock footage")
     )
     private var roundOrder = rounds.shuffled()
     private var roundIndex = 0
@@ -273,10 +277,10 @@ class MainActivity : Activity() {
             answerRow.addView(cakeButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(6) })
         }
         nextButton.visibility = View.GONE
-        val embedUrl = if (item.source.startsWith("Dailymotion")) {
-            "https://www.dailymotion.com/embed/video/${item.videoId}"
-        } else {
-            "https://www.youtube.com/embed/${item.videoId}?playsinline=1&rel=0&enablejsapi=1"
+        val embedUrl = when {
+            item.source.startsWith("Dailymotion") -> "https://www.dailymotion.com/embed/video/${item.videoId}"
+            item.source.startsWith("Pexels") -> item.videoId
+            else -> "https://www.youtube.com/embed/${item.videoId}?playsinline=1&rel=0&enablejsapi=1"
         }
         val watchUrl = if (item.source.startsWith("Dailymotion")) {
             "https://www.dailymotion.com/video/${item.videoId}"
@@ -286,7 +290,11 @@ class MainActivity : Activity() {
             "https://www.youtube.com/watch?v=${item.videoId}"
         }
         video.loadDataWithBaseURL(
-            if (item.source.startsWith("Dailymotion")) "https://www.dailymotion.com" else "https://www.youtube.com",
+            when {
+                item.source.startsWith("Dailymotion") -> "https://www.dailymotion.com"
+                item.source.startsWith("Pexels") -> "https://www.pexels.com"
+                else -> "https://www.youtube.com"
+            },
             "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.fallback{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:13px;color:#fff;background:#181020cc;padding:8px}.fallback a{color:#ffdb91}</style></head><body><iframe src=\"${embedUrl}\" title=\"Cake or Real video\" allow=\"autoplay; fullscreen; picture-in-picture; encrypted-media\" allowfullscreen></iframe><div class=\"fallback\">Video not loading? <a href=\"${watchUrl}\" target=\"_blank\">Open video</a></div></body></html>",
             "text/html", "UTF-8", null
         )
