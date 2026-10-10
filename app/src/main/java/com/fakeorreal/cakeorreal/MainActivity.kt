@@ -53,6 +53,7 @@ class MainActivity : Activity() {
     private lateinit var realButton: Button
     private lateinit var answerRow: LinearLayout
     private lateinit var nextButton: Button
+    private var currentWatchUrl: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -244,8 +245,16 @@ class MainActivity : Activity() {
         video.background = rounded(Color.BLACK, 22, Color.rgb(166, 108, 182), 2)
         video.clipToOutline = true
         root.addView(video, LinearLayout.LayoutParams(-1, 0, 1f).apply {
-            bottomMargin = dp(12)
+            bottomMargin = dp(5)
         })
+        val openVideoButton = makeButton("▶  VIDEO NOT LOADING? OPEN HERE", Color.rgb(91, 205, 160)).apply {
+            setTextColor(Color.rgb(25, 35, 34))
+            setOnClickListener {
+                try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(currentWatchUrl))) }
+                catch (_: Exception) { Toast.makeText(this@MainActivity, "Couldn't open video link", Toast.LENGTH_SHORT).show() }
+            }
+        }
+        root.addView(openVideoButton, LinearLayout.LayoutParams(-1, dp(42)).apply { bottomMargin = dp(8) })
         answerLabel = TextView(this).apply {
             textSize = 16f
             setTextColor(Color.WHITE)
@@ -310,24 +319,25 @@ class MainActivity : Activity() {
             answerRow.addView(cakeButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(6) })
         }
         nextButton.visibility = View.GONE
-        if (item.source.startsWith("Pexels")) {
-            // Pexels serves its clips on a full page and may block iframe embedding.
-            // Load that page directly in WebView so its native video player can initialize.
+        val isPexels = item.source.startsWith("Pexels")
+        val isDailymotion = item.source.startsWith("Dailymotion")
+        currentWatchUrl = when {
+            isPexels -> item.videoId
+            isDailymotion -> "https://www.dailymotion.com/video/${item.videoId}"
+            else -> "https://www.youtube.com/watch?v=${item.videoId}"
+        }
+        if (isPexels) {
             video.loadUrl(item.videoId)
         } else {
-            val embedUrl = if (item.source.startsWith("Dailymotion")) {
+            val embedUrl = if (isDailymotion) {
                 "https://www.dailymotion.com/embed/video/${item.videoId}"
             } else {
-                "https://www.youtube.com/embed/${item.videoId}?playsinline=1&rel=0&enablejsapi=1"
+                "https://www.youtube.com/embed/${item.videoId}?playsinline=1&rel=0"
             }
-            val watchUrl = if (item.source.startsWith("Dailymotion")) {
-                "https://www.dailymotion.com/video/${item.videoId}"
-            } else {
-                "https://www.youtube.com/watch?v=${item.videoId}"
-            }
+            val baseUrl = if (isDailymotion) "https://www.dailymotion.com/" else "https://www.youtube.com/"
             video.loadDataWithBaseURL(
-                if (item.source.startsWith("Dailymotion")) "https://www.dailymotion.com" else "https://www.youtube.com",
-                "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.fallback{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:13px;color:#fff;background:#181020cc;padding:8px}.fallback a{color:#ffdb91}</style></head><body><iframe src=\"${embedUrl}\" title=\"Cake or Real video\" allow=\"autoplay; fullscreen; picture-in-picture; encrypted-media\" allowfullscreen></iframe><div class=\"fallback\">Video not loading? <a href=\"${watchUrl}\" target=\"_blank\">Open video</a></div></body></html>",
+                baseUrl,
+                "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;width:100%;height:100%;background:#08070a}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src=\"${embedUrl}\" title=\"Cake or Real video\" allow=\"autoplay; fullscreen; picture-in-picture; encrypted-media\" allowfullscreen></iframe></body></html>",
                 "text/html", "UTF-8", null
             )
         }
