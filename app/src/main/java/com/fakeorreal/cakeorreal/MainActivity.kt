@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.media.AudioManager
+import android.media.AudioFormat
+import android.media.AudioTrack
 import android.media.ToneGenerator
 import android.content.Intent
 import android.webkit.CookieManager
@@ -44,6 +46,8 @@ class MainActivity : Activity() {
     private var score = 0
     private var answered = false
     private var toneGenerator: ToneGenerator? = null
+    private var backgroundTrack: AudioTrack? = null
+    private var musicEnabled = true
     private lateinit var root: LinearLayout
     private lateinit var scoreLabel: TextView
     private lateinit var questionLabel: TextView
@@ -60,6 +64,7 @@ class MainActivity : Activity() {
         window.statusBarColor = Color.rgb(36, 20, 55)
         window.navigationBarColor = Color.rgb(36, 20, 55)
         toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 70)
+        startBackgroundMusic()
         buildHome()
     }
 
@@ -127,6 +132,7 @@ class MainActivity : Activity() {
             textSize = 19f
             setOnClickListener { startGame() }
         }, LinearLayout.LayoutParams(-1, dp(60)).apply { bottomMargin = dp(12) })
+        home.addView(musicToggleButton(), LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(10) })
         home.addView(makeButton("HOW TO PLAY  ⓘ", Color.rgb(91, 205, 160)).apply {
             setOnClickListener {
                 Toast.makeText(this@MainActivity, "1. Watch the video.  2. Guess CAKE or REAL.  3. Earn points for every correct answer!", Toast.LENGTH_LONG).show()
@@ -205,6 +211,7 @@ class MainActivity : Activity() {
             setPadding(dp(10), dp(3), dp(10), dp(3))
             setOnClickListener { returnHome() }
         }, LinearLayout.LayoutParams(-1, dp(26)))
+        root.addView(musicToggleButton(), LinearLayout.LayoutParams(-1, dp(38)).apply { bottomMargin = dp(8) })
         scoreLabel = TextView(this).apply {
             textSize = 15f
             setTextColor(Color.rgb(255, 232, 178))
@@ -247,7 +254,7 @@ class MainActivity : Activity() {
         root.addView(video, LinearLayout.LayoutParams(-1, 0, 1f).apply {
             bottomMargin = dp(5)
         })
-        val openVideoButton = makeButton("▶  VIDEO NOT LOADING? OPEN HERE", Color.rgb(91, 205, 160)).apply {
+        val openVideoButton = makeButton("▶  WATCH VIDEO IN BROWSER", Color.rgb(91, 205, 160)).apply {
             setTextColor(Color.rgb(25, 35, 34))
             setOnClickListener {
                 try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(currentWatchUrl))) }
@@ -326,20 +333,57 @@ class MainActivity : Activity() {
             isDailymotion -> "https://www.dailymotion.com/video/${item.videoId}"
             else -> "https://www.youtube.com/watch?v=${item.videoId}"
         }
-        if (isPexels) {
-            video.loadUrl(item.videoId)
-        } else {
-            val embedUrl = if (isDailymotion) {
-                "https://www.dailymotion.com/embed/video/${item.videoId}"
-            } else {
-                "https://www.youtube.com/embed/${item.videoId}?playsinline=1&rel=0"
-            }
-            val baseUrl = if (isDailymotion) "https://www.dailymotion.com/" else "https://www.youtube.com/"
-            video.loadDataWithBaseURL(
-                baseUrl,
-                "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>html,body{margin:0;width:100%;height:100%;background:#08070a}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src=\"${embedUrl}\" title=\"Cake or Real video\" allow=\"autoplay; fullscreen; picture-in-picture; encrypted-media\" allowfullscreen></iframe></body></html>",
-                "text/html", "UTF-8", null
+        // Some providers block embedded playback inside Android WebView.
+        // Try the provider page directly and offer a browser fallback above.
+        video.loadUrl(currentWatchUrl)
+    }
+
+    private fun startBackgroundMusic() {
+        if (backgroundTrack != null || !musicEnabled) return
+        try {
+            val sampleRate = 22050
+            val seconds = 8
+            val sampleCount = sampleRate * seconds
+            val pcm = ShortArray(sampleCount)
+            // Original soft ambient loop, synthesized locally without a music download.
+            val chords = arrayOf(
+                doubleArrayOf(261.63, 329.63, 392.00),
+                doubleArrayOf(220.00, 261.63, 329.63),
+                doubleArrayOf(174.61, 220.00, 261.63),
+                doubleArrayOf(196.00, 246.94, 293.66)
             )
+            for (i in 0 until sampleCount) {
+                val t = i.toDouble() / sampleRate
+                val chord = chords[(t.toInt() / 2) % chords.size]
+                var sample = 0.0
+                for (freq in chord) sample += kotlin.math.sin(2.0 * Math.PI * freq * t) * 0.075
+                val beat = t % 1.0
+                val noteFreq = chord[t.toInt() % 3]
+                sample += kotlin.math.sin(2.0 * Math.PI * noteFreq * t) * kotlin.math.exp(-beat * 4.2) * 0.12
+                val fade = kotlin.math.min(1.0, kotlin.math.min(t / 0.25, (seconds - t) / 0.25))
+                pcm[i] = (sample * fade.coerceAtLeast(0.0) * 32767.0).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+            }
+            val track = AudioTrack(AudioManager.STREAM_MUSIC, sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, pcm.size * 2, AudioTrack.MODE_STATIC)
+            track.write(pcm, 0, pcm.size)
+            track.setLoopPoints(0, pcm.size, -1)
+            track.setVolume(0.22f)
+            track.play()
+            backgroundTrack = track
+        } catch (_: Exception) {
+            stopBackgroundMusic()
+        }
+    }
+
+    private fun stopBackgroundMusic() {
+        try { backgroundTrack?.pause(); backgroundTrack?.flush(); backgroundTrack?.release() } catch (_: Exception) { }
+        backgroundTrack = null
+    }
+
+    private fun musicToggleButton(): Button = makeButton(if (musicEnabled) "♫  MUSIC: ON" else "♫  MUSIC: OFF", Color.rgb(91, 205, 160)).apply {
+        setOnClickListener {
+            musicEnabled = !musicEnabled
+            if (musicEnabled) startBackgroundMusic() else stopBackgroundMusic()
+            text = if (musicEnabled) "♫  MUSIC: ON" else "♫  MUSIC: OFF"
         }
     }
 
@@ -383,6 +427,7 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         toneGenerator?.release()
         toneGenerator = null
+        stopBackgroundMusic()
         if (::video.isInitialized) video.destroy()
         super.onDestroy()
     }
