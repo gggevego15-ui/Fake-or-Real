@@ -29,6 +29,7 @@ class MainActivity : Activity() {
         Round("A real cup of coffee while walking", "https://www.pexels.com/video/man-holding-a-cup-of-coffee-while-walking-5321129/", false, "Pexels stock footage"),
         Round("A real laptop and coffee", "https://www.pexels.com/video/a-man-is-holding-a-cup-of-coffee-while-using-a-laptop-20246512/", false, "Pexels stock footage")
     )
+    private var roundOrder = rounds.shuffled()
     private var roundIndex = 0
     private var score = 0
     private var answered = false
@@ -39,6 +40,7 @@ class MainActivity : Activity() {
     private lateinit var answerLabel: TextView
     private lateinit var cakeButton: Button
     private lateinit var realButton: Button
+    private lateinit var answerRow: LinearLayout
     private lateinit var nextButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,22 +96,22 @@ class MainActivity : Activity() {
             setPadding(0, dp(10), 0, dp(8))
         }
         root.addView(answerLabel, matchWrap())
-        val answerRow = LinearLayout(this).apply {
+        answerRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
         cakeButton = makeButton("🍰 It's cake", Color.rgb(255, 105, 145))
         realButton = makeButton("✨ It's real", Color.rgb(91, 205, 160))
-        cakeButton.setOnClickListener { answer(true) }
-        realButton.setOnClickListener { answer(false) }
-        answerRow.addView(cakeButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginEnd = dp(6) })
-        answerRow.addView(realButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(6) })
         root.addView(answerRow, matchWrap())
         nextButton = makeButton("Next video →", Color.rgb(255, 202, 87))
         nextButton.setTextColor(Color.rgb(36, 20, 55))
         nextButton.visibility = View.GONE
         nextButton.setOnClickListener {
-            roundIndex = (roundIndex + 1) % rounds.size
+            roundIndex++
+            if (roundIndex >= roundOrder.size) {
+                roundOrder = rounds.shuffled()
+                roundIndex = 0
+            }
             answered = false
             loadRound()
         }
@@ -126,12 +128,24 @@ class MainActivity : Activity() {
     }
 
     private fun loadRound() {
-        val item = rounds[roundIndex]
+        val item = roundOrder[roundIndex]
         scoreLabel.text = "Score: $score  •  Round ${roundIndex + 1}/${rounds.size}"
         questionLabel.text = "Is it cake or a real object?"
         answerLabel.text = "Watch the clip, then choose."
         cakeButton.isEnabled = true
         realButton.isEnabled = true
+        // Randomize the physical order of the two answer choices on every round.
+        answerRow.removeAllViews()
+        cakeButton.setOnClickListener { answer(true) }
+        realButton.setOnClickListener { answer(false) }
+        val cakeFirst = listOf(true, false).shuffled().first()
+        if (cakeFirst) {
+            answerRow.addView(cakeButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginEnd = dp(6) })
+            answerRow.addView(realButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(6) })
+        } else {
+            answerRow.addView(realButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginEnd = dp(6) })
+            answerRow.addView(cakeButton, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginStart = dp(6) })
+        }
         nextButton.visibility = View.GONE
         if (item.source.startsWith("Pexels")) {
             video.loadUrl(item.videoId)
@@ -152,7 +166,7 @@ class MainActivity : Activity() {
     private fun answer(guessCake: Boolean) {
         if (answered) return
         answered = true
-        val item = rounds[roundIndex]
+        val item = roundOrder[roundIndex]
         val correct = guessCake == item.isCake
         if (correct) score++
         scoreLabel.text = "Score: $score  •  Round ${roundIndex + 1}/${rounds.size}"
