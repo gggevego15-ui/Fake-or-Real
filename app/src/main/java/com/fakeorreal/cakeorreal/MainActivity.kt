@@ -4,6 +4,7 @@ import android.app.Activity
 import android.os.Bundle
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.view.Gravity
@@ -59,29 +60,53 @@ class MainActivity : Activity() {
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(18), dp(16), dp(18), dp(16))
-            setBackgroundColor(Color.rgb(36, 20, 55))
+            setPadding(dp(18), dp(18), dp(18), dp(16))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(34, 17, 58), Color.rgb(69, 31, 83), Color.rgb(25, 20, 52))
+            )
+        }
+        val brand = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(16), dp(18), dp(16), dp(18))
+            background = rounded(Color.rgb(78, 43, 98), 24, Color.rgb(135, 91, 157), 1)
         }
         val title = TextView(this).apply {
-            text = "🍰 CAKE OR REAL?"
-            textSize = 27f
+            text = "🍰  CAKE OR REAL?"
+            textSize = 28f
             setTextColor(Color.WHITE)
+            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+            gravity = Gravity.CENTER
+            letterSpacing = 0.03f
+        }
+        brand.addView(title, matchWrap())
+        val subtitle = TextView(this).apply {
+            text = "CAN YOU SPOT THE ILLUSION?"
+            textSize = 11f
+            setTextColor(Color.rgb(255, 219, 145))
+            typeface = Typeface.DEFAULT_BOLD
+            letterSpacing = 0.16f
+            gravity = Gravity.CENTER
+            setPadding(0, dp(7), 0, 0)
+        }
+        brand.addView(subtitle, matchWrap())
+        root.addView(brand, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+        scoreLabel = TextView(this).apply {
+            textSize = 15f
+            setTextColor(Color.rgb(255, 232, 178))
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = rounded(Color.rgb(48, 31, 68), 18, Color.rgb(102, 74, 123), 1)
         }
-        root.addView(title, matchWrap())
-        scoreLabel = TextView(this).apply {
-            textSize = 16f
-            setTextColor(Color.rgb(255, 219, 111))
-            gravity = Gravity.CENTER
-            setPadding(0, dp(6), 0, dp(10))
-        }
-        root.addView(scoreLabel, matchWrap())
+        root.addView(scoreLabel, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         questionLabel = TextView(this).apply {
-            textSize = 17f
+            textSize = 19f
             setTextColor(Color.WHITE)
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, dp(10))
+            setPadding(dp(4), dp(4), dp(4), dp(12))
         }
         root.addView(questionLabel, matchWrap())
         video = WebView(this).apply {
@@ -92,14 +117,19 @@ class MainActivity : Activity() {
             webChromeClient = WebChromeClient()
             webViewClient = WebViewClient()
         }
-        root.addView(video, LinearLayout.LayoutParams(-1, 0, 1f))
+        video.background = rounded(Color.BLACK, 22, Color.rgb(166, 108, 182), 2)
+        video.clipToOutline = true
+        root.addView(video, LinearLayout.LayoutParams(-1, 0, 1f).apply {
+            bottomMargin = dp(12)
+        })
         answerLabel = TextView(this).apply {
-            textSize = 17f
+            textSize = 16f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
-            setPadding(0, dp(10), 0, dp(8))
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            background = rounded(Color.rgb(48, 31, 68), 16, Color.rgb(102, 74, 123), 1)
         }
-        root.addView(answerLabel, matchWrap())
+        root.addView(answerLabel, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         answerRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -215,9 +245,20 @@ class MainActivity : Activity() {
         text = label
         textSize = 14f
         isAllCaps = false
-        setTextColor(Color.WHITE)
-        setBackgroundColor(color)
+        typeface = Typeface.DEFAULT_BOLD
+        letterSpacing = 0.01f
+        setTextColor(if (color == Color.rgb(255, 202, 87)) Color.rgb(36, 20, 55) else Color.WHITE)
+        background = rounded(color, 17, Color.argb(70, 255, 255, 255), 1)
+        elevation = dp(3).toFloat()
+        stateListAnimator = null
     }
+
+    private fun rounded(fill: Int, radiusDp: Int, stroke: Int, strokeDp: Int): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(fill)
+            cornerRadius = dp(radiusDp).toFloat()
+            setStroke(dp(strokeDp), stroke)
+        }
 
     private fun matchWrap() = LinearLayout.LayoutParams(-1, -2)
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
