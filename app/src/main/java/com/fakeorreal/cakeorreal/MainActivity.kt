@@ -18,7 +18,7 @@ class MainActivity : Activity() {
     private data class Round(val title: String, val videoId: String, val isCake: Boolean, val source: String)
     private val rounds = listOf(
         Round("Hyper-realistic chocolate sculpture", "rj60H_Y3bQ8", true, "Amaury Guichon / YouTube Shorts"),
-        Round("Real cake being cut", "7550994", true, "Pexels stock footage")
+        Round("A real smartphone in use", "https://www.pexels.com/video/a-man-using-a-mobile-phone-7539292/", false, "Pexels stock footage")
     )
     private var roundIndex = 0
     private var score = 0
@@ -125,7 +125,7 @@ class MainActivity : Activity() {
         realButton.isEnabled = true
         nextButton.visibility = View.GONE
         if (item.source.startsWith("Pexels")) {
-            video.loadUrl("https://www.pexels.com/video/person-getting-a-slice-of-cake-7550994/")
+            video.loadUrl(item.videoId)
         } else {
             video.loadDataWithBaseURL(
                 "https://www.youtube-nocookie.com",
@@ -142,7 +142,8 @@ class MainActivity : Activity() {
         val correct = guessCake == item.isCake
         if (correct) score++
         scoreLabel.text = "Score: $score  •  Round ${roundIndex + 1}/${rounds.size}"
-        answerLabel.text = if (correct) "🎉 Correct! This clip shows cake." else "🙈 Not quite — this clip shows cake."
+        val reveal = if (item.isCake) "cake" else "a real object"
+        answerLabel.text = if (correct) "🎉 Correct! This clip shows $reveal." else "🙈 Not quite — this clip shows $reveal."
         cakeButton.isEnabled = false
         realButton.isEnabled = false
         nextButton.visibility = View.VISIBLE
